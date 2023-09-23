@@ -2,8 +2,8 @@ using System;
 
 public interface IInventorySlot
 {
-    bool IsFull { get; }
-    bool IsEmpty{ get; }
+    public bool IsFull { get; }
+    public bool IsEmpty{ get; }
     
     IInventoryItem Item { get; }
     Type ItemType { get; }

@@ -12,5 +12,7 @@ public interface IInventory
 
     int GetItemAmount(Type itemType);
 
-    bool AddItem(object sender, IInventoryItem item);
+    bool TryToAdd(object sender, IInventoryItem item);
+    void RemoveItem(object sender, Type itemType, int amount = 1);
+    bool HasItem(Type type, out IInventoryItem item);
 }
