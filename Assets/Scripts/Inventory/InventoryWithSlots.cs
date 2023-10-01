@@ -12,6 +12,7 @@ public class InventoryWithSlots : IInventory
 
     public event Action<object, IInventoryItem, int> OnInventoryItemAdded;
     public event Action<object, Type, int> OnInventoryItemRemoved;
+    public event Action<object> OnInventoryStateChanged;
 
     private List<IInventorySlot> _slots;
 
@@ -63,7 +64,7 @@ public class InventoryWithSlots : IInventory
 
     public IInventoryItem[] GetEquippedItem()
     {
-        var requiredSlots = _slots.FindAll(slot => !slot.IsEmpty && slot.Item.IsEquipped);
+        var requiredSlots = _slots.FindAll(slot => !slot.IsEmpty && slot.Item.State.IsEquipped);
         var equippedItems = new List<IInventoryItem>();
 
         foreach (var slot in requiredSlots)
@@ -103,18 +104,18 @@ public class InventoryWithSlots : IInventory
             return TryAddToSlot(sender, emptySlot, item);
         }
 
-        Debug.Log($"Can't add item ({item.Type}), amount ({item.Amount}), because there is no place in inventory.");
+        Debug.Log($"Can't add item ({item.Type}), amount ({item.State.Amount}), because there is no place in inventory.");
 
         return false;
     }
 
     private bool TryAddToSlot(object sender, IInventorySlot slot, IInventoryItem item)
     {
-        var fits = slot.Amount + item.Amount <= item.MaxItemsInInventorySlot;
-        var amountToAdd = fits ? item.Amount : item.MaxItemsInInventorySlot - slot.Amount;
-        var amountLeft = item.Amount - amountToAdd;
+        var fits = slot.Amount + item.State.Amount <= item.Info.MaxItemsInInventory;
+        var amountToAdd = fits ? item.State.Amount : item.Info.MaxItemsInInventory - slot.Amount;
+        var amountLeft = item.State.Amount - amountToAdd;
         var clonedItem = item.Clone();
-        clonedItem.Amount = amountToAdd;
+        clonedItem.State.Amount = amountToAdd;
 
         if (slot.IsEmpty)
         {
@@ -122,19 +123,64 @@ public class InventoryWithSlots : IInventory
         }
         else
         {
-            slot.Item.Amount += amountToAdd;
+            slot.Item.State.Amount += amountToAdd;
         }
 
         Debug.Log($"Item added to inventory. Item type:{item.Type}, amount: {amountToAdd}");
         OnInventoryItemAdded?.Invoke(sender, item, amountToAdd);
+        OnInventoryStateChanged?.Invoke(sender);
 
         if (amountLeft <= 0)
         {
             return true;
         }
 
-        item.Amount = amountLeft;
+        item.State.Amount = amountLeft;
         return TryToAdd(sender, item);
+    }
+
+    public void TransitFromSlotToSlot(object sender, IInventorySlot fromSlot, IInventorySlot toSlot)
+    {
+        if (fromSlot.IsEmpty)
+        {
+            return;
+        }
+
+        if (toSlot.IsFull)
+        {
+            return;
+        }
+
+        if (!toSlot.IsEmpty && fromSlot.ItemType != toSlot.ItemType)
+        {
+            return;
+        }
+
+        var slotCapacity = fromSlot.Capacity;
+        var fits = fromSlot.Amount + toSlot.Amount <= slotCapacity;
+        var amountToAdd = fits ? fromSlot.Amount : slotCapacity - toSlot.Amount;
+        var amountLeft = fromSlot.Amount - amountToAdd;
+
+        if (toSlot.IsEmpty)
+        {
+            toSlot.SetItem(fromSlot.Item);
+            fromSlot.Clear();
+
+            OnInventoryStateChanged?.Invoke(sender);
+        }
+
+        toSlot.Item.State.Amount += amountToAdd;
+
+        if (fits)
+        {
+            fromSlot.Clear();
+        }
+        else
+        {
+            fromSlot.Item.State.Amount = amountLeft;
+        }
+
+        OnInventoryStateChanged?.Invoke(sender);
     }
 
     public void RemoveItem(object sender, Type itemType, int amount = 1)
@@ -154,7 +200,7 @@ public class InventoryWithSlots : IInventory
 
             if (slot.Amount >= amountToRemove)
             {
-                slot.Item.Amount -= amountToRemove;
+                slot.Item.State.Amount -= amountToRemove;
 
                 if (slot.Amount <= 0)
                 {
@@ -163,7 +209,7 @@ public class InventoryWithSlots : IInventory
 
                 Debug.Log($"Item removed from inventory. Item type:{itemType}, amount: {amountToRemove}");
                 OnInventoryItemRemoved?.Invoke(sender, itemType, amountToRemove);
-
+                OnInventoryStateChanged?.Invoke(sender);
                 break;
             }
 
