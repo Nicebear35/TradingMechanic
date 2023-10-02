@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00e588feab28295479576194a34971fb, type: 3}
-  m_Name: InventoryItemInfo
+  m_Name: InventoryItemInfoChiliBowl
   m_EditorClassIdentifier: 
-  _id: blueberrydesert
-  _title: Blueberry Desert
-  _description: Gives you +5 HP
+  _id: chili
+  _title: Chili
+  _description: Gives you +2 HP
   _maxInventoryItems: 10
-  _icon: {fileID: 21300000, guid: 055db8ce6c926124bacbb3216f40ac4a, type: 3}
+  _icon: {fileID: 21300000, guid: 4e91672c0a9122944b236cf1fa7a1e84, type: 3}

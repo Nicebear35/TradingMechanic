@@ -109,7 +109,7 @@ public class InventoryWithSlots : IInventory
         return false;
     }
 
-    private bool TryAddToSlot(object sender, IInventorySlot slot, IInventoryItem item)
+    public bool TryAddToSlot(object sender, IInventorySlot slot, IInventoryItem item)
     {
         var fits = slot.Amount + item.State.Amount <= item.Info.MaxItemsInInventory;
         var amountToAdd = fits ? item.State.Amount : item.Info.MaxItemsInInventory - slot.Amount;
@@ -141,6 +141,11 @@ public class InventoryWithSlots : IInventory
 
     public void TransitFromSlotToSlot(object sender, IInventorySlot fromSlot, IInventorySlot toSlot)
     {
+        if (fromSlot == toSlot)
+        {
+            return;
+        }
+
         if (fromSlot.IsEmpty)
         {
             return;
@@ -151,7 +156,7 @@ public class InventoryWithSlots : IInventory
             return;
         }
 
-        if (!toSlot.IsEmpty && fromSlot.ItemType != toSlot.ItemType)
+        if (!toSlot.IsEmpty && fromSlot.Item.Info.Id != toSlot.Item.Info.Id)
         {
             return;
         }
@@ -207,7 +212,6 @@ public class InventoryWithSlots : IInventory
                     slot.Clear();
                 }
 
-                Debug.Log($"Item removed from inventory. Item type:{itemType}, amount: {amountToRemove}");
                 OnInventoryItemRemoved?.Invoke(sender, itemType, amountToRemove);
                 OnInventoryStateChanged?.Invoke(sender);
                 break;
@@ -217,7 +221,6 @@ public class InventoryWithSlots : IInventory
             amountToRemove -= slot.Amount;
             slot.Clear();
 
-            Debug.Log($"Item removed from inventory. Item type:{itemType}, amount: {amountRemoved}");
             OnInventoryItemRemoved?.Invoke(sender, itemType, amountRemoved);
         }
     }
@@ -231,5 +234,10 @@ public class InventoryWithSlots : IInventory
     public IInventorySlot[] GetAllSlots(Type itemType)
     {
         return _slots.FindAll(slot => !slot.IsEmpty && slot.ItemType == itemType).ToArray();
+    }
+
+    public IInventorySlot[] GetAllSlots()
+    {
+        return _slots.ToArray();
     }
 }

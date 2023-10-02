@@ -3,12 +3,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIInventorySlot : MonoBehaviour
+public class UIInventorySlot : UISlot
 {
-    public virtual void OnDrop(PointerEventData eventdata)
+    [SerializeField] private UIInventoryItem _uiInventoryItem;
+    public IInventorySlot Slot { get; private set; }
+
+    private UIInventory _uiInventory;
+
+    private void Awake()
     {
-        var otherItemTransform = eventdata.pointerDrag.transform;
-        otherItemTransform.SetParent(transform);
-        otherItemTransform.localPosition = Vector3.zero;
+        _uiInventory = GetComponentInParent<UIInventory>();
+    }
+
+    public void SetSlot(IInventorySlot newSlot)
+    {
+        Slot = newSlot;
+    }
+    public override void OnDrop(PointerEventData eventdata)
+    {
+        var otherItemUI = eventdata.pointerDrag.GetComponent<UIInventoryItem>();
+        var otherSlotUI = otherItemUI.GetComponentInParent<UIInventorySlot>();
+        var otherSlot = otherSlotUI.Slot; 
+        var inventory = _uiInventory.Inventory;
+
+        inventory.TransitFromSlotToSlot(this, otherSlot, Slot);
+
+        Refresh();
+        otherSlotUI.Refresh();
+    }
+
+    public void Refresh()
+    {
+        if(Slot != null)
+        {
+            _uiInventoryItem.Refresh(Slot);
+        }
     }
 }
